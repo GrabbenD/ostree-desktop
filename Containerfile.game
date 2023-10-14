@@ -1,0 +1,215 @@
+# |
+# | CLIENT: BASE
+# |
+
+FROM docker.io/library/archlinux AS rootfs
+
+# Generate a GPG secret key for signing and import CachyOS keys
+RUN pacman-key --init && \
+    pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com && \
+    pacman-key --lsign-key F3B607488DB35A47
+
+# Import CachyOS 86-64-v3 repositories to current package manager
+COPY game/.system/etc/pacman.conf /etc/
+RUN curl https://raw.githubusercontent.com/CachyOS/CachyOS-PKGBUILDS/master/cachyos-mirrorlist/cachyos-mirrorlist -o /etc/pacman.d/cachyos-mirrorlist && \
+    curl https://raw.githubusercontent.com/CachyOS/CachyOS-PKGBUILDS/master/cachyos-v3-mirrorlist/cachyos-v3-mirrorlist -o /etc/pacman.d/cachyos-v3-mirrorlist && \
+    pacman --noconfirm --needed -Sy cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist cachyos-hooks
+
+# Perform a clean system installation with latest CachyOS packages in chroot to correctly execute hooks, this uses host's Pacman
+RUN pacman --noconfirm -S arch-install-scripts && \
+    pacstrap -K -P /mnt base && \
+    cp -av /etc/pacman.d/ /mnt/etc/
+
+# Reusable base template
+FROM scratch AS base
+COPY --from=rootfs /mnt /
+
+# Clock
+ARG SYSTEM_OPT_TIMEZONE
+RUN ln -sf /usr/share/zoneinfo/${SYSTEM_OPT_TIMEZONE} /etc/localtime
+
+# Keymap hook
+ARG SYSTEM_OPT_KEYMAP
+RUN echo "KEYMAP=${SYSTEM_OPT_KEYMAP}" > /etc/vconsole.conf
+
+# Language
+RUN echo "LANG=en_US.UTF-8" > /etc/locale.conf && \
+    echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
+    locale-gen
+
+# Todo: fix duplication
+#FROM localhost/ostree/base:latest
+
+# Preserve GID/UID for correct home permissions (openssl passwd -6 $password)
+ARG USER="game"
+RUN useradd \
+    --home-dir "/home/monorepo/client/${USER}" \
+    --uid "1000" \
+    --shell "/bin/fish" \
+    --password '$6$xJt4z2XpUK8mLYYA$8Ev4eGtLP8Evww6aAPWFvGZDMIWH7LyyZO8Vb7UP2iiyvHI2wRv95CYNpvGZr.ee0deCIGOyKBxrw8NCngWNR/' \
+    ${USER}
+
+# Wheel
+RUN pacman --noconfirm --sync sudo && \
+    echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+RUN sudo usermod --append --groups \
+    wheel ${USER}
+
+# AUR
+RUN pacman --noconfirm -S \
+    paru \
+    base-devel
+
+# |
+# | CLIENT: DESKTOP
+# |
+
+USER ${USER}
+WORKDIR /home/${USER}
+
+# Shell
+RUN paru --noconfirm --sync \
+    fish
+
+# Communication
+RUN paru --noconfirm --sync \
+    dbus
+
+# Audio (server, protocols, pulse compatbility, session manager, control panel). Debug: pactl info
+# Todo: codec
+RUN paru --noconfirm --sync \
+    pipewire \
+    pipewire-audio \
+    pipewire-pulse \
+    wireplumber \
+    pavucontrol
+
+RUN sudo usermod --append --groups \
+    audio ${USER}
+
+# Fonts
+# Todo: fix font config
+RUN paru --noconfirm --sync \
+    noto-fonts \
+    noto-fonts-emoji
+
+# Todo: Cursor
+#RUN paru --noconfirm --sync \
+#    bibata-cursor-theme
+
+# WM: Sway
+# Todo: relative path
+RUN cd /home/monorepo/client/game/Documents/makepkg/wlroots-git && \
+    makepkg --noconfirm --clean --cleanbuild --syncdeps --install --force
+RUN cd /home/monorepo/client/game/Documents/makepkg/sway-git && \
+    makepkg --noconfirm --clean --cleanbuild --syncdeps --install --force
+
+# WM: XWayland
+RUN paru --noconfirm --sync \
+    xorg-xwayland
+
+# WM: XDG
+RUN paru --noconfirm --sync \
+    xdg-desktop-portal \
+    xdg-desktop-portal-wlr
+
+# HW
+RUN sudo usermod --append --groups \
+    video ${USER}
+
+# wlr-displays/libinput events support
+RUN sudo usermod --append --groups \
+    input ${USER}
+
+# |
+# | CLIENT: PRODUCITIVTY
+# |
+
+# Application launcher
+RUN paru --noconfirm --sync \
+    rofi-lbonn-wayland-git
+
+# Clipboard
+RUN paru --noconfirm --sync \
+    copyq \
+    wl-clipboard
+
+# Screenshots
+RUN paru --noconfirm --sync \
+    grim
+
+# Terminal
+RUN paru --noconfirm --sync \
+    foot
+
+# File browser
+RUN paru --noconfirm --sync \
+    thunar
+
+# Passwords
+RUN paru --noconfirm --sync \
+    keepassxc
+
+# https://keepassxc.org/docs/KeePassXC_GettingStarted#_setup_browser_integration
+RUN paru --noconfirm --sync \
+    thorium-browser-bin
+
+# |
+# | CLIENT: DEVELOPMENT
+# |
+
+# SSH
+RUN paru --noconfirm --sync \
+    openssh
+
+# GIT
+RUN paru --noconfirm --sync \
+    git \
+    gnupg \
+    github-desktop-bin
+
+# Editor
+RUN paru --noconfirm --sync \
+    vscodium-bin
+
+# Utilities
+RUN paru --noconfirm --sync \
+    tmux \
+    nano \
+    less
+
+# |
+# | CLIENT: Hardware acceleration
+# |
+
+RUN paru --noconfirm --sync \
+    mesa \
+    lib32-mesa \
+    libva-mesa-driver \
+    lib32-libva-mesa-driver \
+    mesa-vdpau \
+    lib32-mesa-vdpau \
+    vulkan-radeon \
+    lib32-vulkan-radeon
+
+# |
+# | CLIENT: GAMING
+# |
+
+RUN paru --noconfirm --sync \
+    spotify
+
+# Gamemode
+RUN paru --noconfirm --sync \
+    gamemode
+
+RUN sudo usermod --append --groups \
+    gamemode ${USER}
+
+# |
+# | CLIENT: BOOT
+# |
+
+USER root
+CMD /sbin/init
