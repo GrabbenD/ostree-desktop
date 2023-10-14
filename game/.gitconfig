@@ -1,0 +1,13 @@
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[user]
+	name = GrabbenD
+	email = grabbend@hotmail.com
+	signingKey = 4582F3AB04AD38FCDE57C2A895EDA4B5D5CC0BC9
+[commit]
+	gpgSign = true
+[tag]
+	forceSignAnnotated = true
