@@ -1,0 +1,296 @@
+# Documentation:
+# - https://github.com/swaywm/sway/wiki
+# - https://man.archlinux.org/man/sway.1#SEE_ALSO
+# - https://wiki.archlinux.org/title/sway
+#
+# Software:
+# - https://wiki.gentoo.org/wiki/List_of_software_for_Wayland
+# - https://github.com/riverwm/river/wiki/Recommended-Software
+# - https://github.com/natpen/awesome-wayland
+
+# Todo
+# XCURSOR_SIZE
+# XCURSOR_THEME
+
+# https://man.archlinux.org/man/sway-output.5.en
+# $ swaymsg -t get_outputs
+# $ wdisplays
+
+### Outputs
+
+output * {
+    # swag-bg
+    background #404040 solid_color
+}
+
+output DP-1 {
+    mode 3840x1600@143.998Hz
+    position 0 0
+
+    # Lowest frametime in game to avoid stutters for all windows
+    adaptive_sync off
+    max_render_time 1
+    #max_render_time 16
+
+    # HDR
+    #render_bit_depth 10
+
+    # Sleep (todo)
+    #dpms on
+}
+
+output DP-2 {
+    mode 1920x1080@119.982Hz
+    position 3840 260
+}
+
+### Scripts
+
+# Auto VRR (todo)
+#exec "~/.config/sway/scripts/auto_exit_fullscreen.sh"
+
+# Auto Exit Fullscreen (todo)
+#exec "~/.config/sway/scripts/auto_exit_fullscreen.sh"
+#bindsym $mod+Shift+f exec "killall auto_exit_fullscreen.sh >/dev/null 2>&1 && notify-send 'Auto exit fullscreen' 'Disabled' || { notify-send 'Auto exit fullscreen' 'Enabled'; exec ~/.config/sway/scripts/auto_exit_fullscreen.sh; }"
+
+### Window rules
+# xwayland: class
+#  wayland: app_id
+
+# Better for single window
+#for_window [app_id=foot] max_render_time 1
+
+### Idle configuration (todo)
+
+# Sleep
+#exec --no-startup-id swayidle -w timeout 600 'swaymsg "output * dpms off"' resume 'swaymsg "output * dpms on"'
+#for_window [shell=".*"] inhibit_idle fullscreen
+
+# Example configuration:
+#
+# exec swayidle -w \
+#          timeout 300 'swaylock -f -c 000000' \
+#          timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
+#          before-sleep 'swaylock -f -c 000000'
+#
+# This will lock your screen after 300 seconds of inactivity, then turn off
+# your displays after another 300 seconds, and turn your screens back on when
+# resumed. It will also lock your screen before your computer goes to sleep.
+
+### Input configuration
+#
+# Example configuration:
+#
+#   input "2:14:SynPS/2_Synaptics_TouchPad" {
+#       dwt enabled
+#       tap enabled
+#       natural_scroll enabled
+#       middle_emulation enabled
+#   }
+#
+# You can get the names of your inputs by running: swaymsg -t get_inputs
+# Read `man 5 sway-input` for more information about this section.
+
+# https://man.archlinux.org/man/sway-input.5.en
+# https://man.archlinux.org/man/xkeyboard-config.7.en
+# swaymsg -t get_inputs
+# man sway-input
+
+# Todo identify by ID
+input type:pointer {
+    accel_profile "flat"
+    pointer_accel 0
+    scroll_factor 1.5
+}
+
+input type:keyboard {
+    xkb_layout "se"
+    xkb_model "pc105"
+    repeat_delay 200
+    repeat_rate 50
+}
+
+### Key bindings
+#
+# Basics:
+#
+    # Variables
+    set $mod Mod4
+    set $term foot
+
+    # VRR
+    #bindsym $mod+period output DP-1 adaptive_sync on
+    #bindsym $mod+minus output DP-1 adaptive_sync off
+
+    # Kill focused window
+    bindsym $mod+c kill
+
+    # Drag floating windows by holding down $mod and left mouse button.
+    # Resize them with right mouse button + $mod.
+    # Despite the name, also works for non-floating windows.
+    # Change normal to inverse to use left mouse button for resizing and right
+    # mouse button for dragging.
+    floating_modifier $mod normal
+
+    # Reload the configuration file
+    bindsym $mod+Shift+c reload
+
+    # Exit sway (logs you out of your Wayland session)
+    bindsym $mod+m exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -B 'Yes, exit sway' 'swaymsg exit'
+#
+# Apps
+#
+    bindsym $mod+Tab exec 'rofi -modi run, drun, window  -show drun'
+    bindsym $mod+b exec thorium-browser --ozone-platform=wayland --enable-zero-copy --enable-features=VaapiVideoDecoder --enable-features=CanvasOopRasterization --enable-gpu-rasterization --use-vulkan
+    bindsym $mod+d exec thunar
+    bindsym $mod+e exec vscodium
+    #bindsym $mod+s exec spotifywm
+    bindsym $mod+t exec $term
+    bindsym $mod+Return exec $term
+    #bindsym Print exec grim screenshot.png
+    #imv
+#
+# Moving around:
+#
+    # Move your focus around
+    bindsym $mod+Left focus left
+    bindsym $mod+Down focus down
+    bindsym $mod+Up focus up
+    bindsym $mod+Right focus right
+
+    # Ditto, with arrow keys
+    bindsym $mod+Shift+Left move left
+    bindsym $mod+Shift+Down move down
+    bindsym $mod+Shift+Up move up
+    bindsym $mod+Shift+Right move right
+#
+# Workspaces:
+#
+    # Switch to workspace
+    bindsym $mod+1 workspace number 1
+    bindsym $mod+2 workspace number 2
+    bindsym $mod+3 workspace number 3
+    bindsym $mod+4 workspace number 4
+    bindsym $mod+5 workspace number 5
+    bindsym $mod+6 workspace number 6
+    bindsym $mod+7 workspace number 7
+    bindsym $mod+8 workspace number 8
+    bindsym $mod+9 workspace number 9
+    bindsym $mod+0 workspace number 10
+
+    # Move focused container to workspace
+    bindsym $mod+Shift+1 move container to workspace number 1
+    bindsym $mod+Shift+2 move container to workspace number 2
+    bindsym $mod+Shift+3 move container to workspace number 3
+    bindsym $mod+Shift+4 move container to workspace number 4
+    bindsym $mod+Shift+5 move container to workspace number 5
+    bindsym $mod+Shift+6 move container to workspace number 6
+    bindsym $mod+Shift+7 move container to workspace number 7
+    bindsym $mod+Shift+8 move container to workspace number 8
+    bindsym $mod+Shift+9 move container to workspace number 9
+    bindsym $mod+Shift+0 move container to workspace number 10
+#
+# Layout stuff:
+#
+    # You can "split" the current object of your focus with
+    # $mod+b or $mod+v, for horizontal and vertical splits
+    # respectively.
+    #bindsym $mod+b splith
+    #bindsym $mod+v splitv
+
+    # Switch the current container between different layout styles
+    #bindsym $mod+s layout stacking
+    #bindsym $mod+w layout tabbed
+    #bindsym $mod+e layout toggle split
+
+    # Make the current focus fullscreen
+    bindsym $mod+f fullscreen
+
+    # Toggle the current focus between tiling and floating mode
+    bindsym $mod+v floating toggle
+
+    # Swap focus between the tiling area and the floating area
+    bindsym $mod+space focus mode_toggle
+
+    # Resize
+    bindsym $mod+r mode "resize"
+#
+# Resizing containers:
+#
+mode "resize" {
+    # Ditto, with arrow keys
+    # left will shrink the containers width
+    # right will grow the containers width
+    # up will shrink the containers height
+    # down will grow the containers height
+    bindsym Left resize shrink width 10px
+    bindsym Down resize grow height 10px
+    bindsym Up resize shrink height 10px
+    bindsym Right resize grow width 10px
+
+    # Return to default mode
+    bindsym Escape mode "default"
+}
+
+# https://man.archlinux.org/man/sway-bar.5.en
+bar {
+    # Font?
+    position top
+    height 30
+    mode hide
+    modifier Mod4
+
+    # Clock
+    #status_command while date +'%Y-%m-%d %I:%M:%S %p'; do sleep 1; done
+
+    colors {
+        statusline #ffffff
+        background #323232
+        inactive_workspace #32323200 #32323200 #5c5c5c
+    }
+}
+
+#
+# Customization
+#
+# https://man.archlinux.org/man/sway.5.en
+
+default_orientation "auto"
+
+# Background (requires swaybg)
+#swaybg_command -
+
+# Error messages
+swaynag_command swaynag
+
+workspace_layout "default"
+
+#xwayland "enable"
+
+client.focused #1871B0 #1871B0 #FFFFFF #1871B0 #1871B0
+client.focused_inactive #404040 #404040 #FFFFFF #404040 #404040
+client.unfocused #404040 #404040 #FFFFFF #404040 #404040
+client.urgent #FF0000 #FF0000 #FFFFFF #FF0000 #FF0000
+
+#font pango:monospace 2
+titlebar_border_thickness 0
+titlebar_padding 2
+default_border none
+default_floating_border normal
+
+gaps inner 3
+#gaps outer -3
+smart_gaps off
+smart_borders off
+hide_edge_borders none
+
+focus_follows_mouse no
+focus_on_window_activation none
+focus_wrapping no
+
+popup_during_fullscreen smart
+
+### System
+
+# DBUS
+include /etc/sway/config.d/*
