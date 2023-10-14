@@ -1,0 +1,28 @@
+# X11
+
+# Runtime dependencies
+RUN pacman --noconfirm -S xorg-server xorg-xinit
+
+# XDG
+RUN pacman --noconfirm -S xdg-desktop-portal-gtk && \
+    systemctl --user enable xdg-desktop-portal-gtk.service
+
+# Snappier mouse
+RUN pacman --noconfirm -S xf86-input-evdev
+
+# DWM: Build dependencies
+RUN pacman --noconfirm -S libx11 libxinerama libxft webkit2gtk base-devel git
+
+# DWM: Build ST
+WORKDIR /usr/local/src/st
+RUN git clone https://git.suckless.org/st ./
+RUN make clean install
+
+# DWM: Build (and preserve local changes and update base)
+WORKDIR /usr/local/src/dwm
+RUN ln -s /home/${USER}/.config/dwm/config.h ./
+RUN git init && \
+    git remote add origin https://git.suckless.org/dwm && \
+    git fetch origin
+RUN git checkout -b master --track origin/master && \
+    make clean install

@@ -1,0 +1,52 @@
+# |
+# | ROOTFS: REPOSITORY
+# |
+
+# Perform a clean system installation
+FROM archlinux:base AS rootfs
+
+# Generate a GPG secret key for signing and populate the keyring
+RUN pacman-key --init && \
+    pacman-key --populate
+
+# Import CachyOS keys
+RUN pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com && \
+    pacman-key --lsign-key F3B607488DB35A47
+
+# Import CachyOS repositories
+# Todo remove copy
+COPY game/.system/etc/pacman.conf /etc/
+RUN curl https://raw.githubusercontent.com/CachyOS/CachyOS-PKGBUILDS/master/cachyos-mirrorlist/cachyos-mirrorlist -o /etc/pacman.d/cachyos-mirrorlist && \
+    curl https://raw.githubusercontent.com/CachyOS/CachyOS-PKGBUILDS/master/cachyos-v3-mirrorlist/cachyos-v3-mirrorlist -o /etc/pacman.d/cachyos-v3-mirrorlist && \
+    pacman --noconfirm --needed -Sy cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist cachyos-v4-mirrorlist cachyos-hooks
+
+# |
+# | ROOTFS: BUILD
+# |
+
+# Initialize ALPM dbpath and set correct FS permissions
+RUN mkdir -m 0755 -pv /mnt/var/{cache/pacman/pkg,lib/pacman,log} /mnt/{dev,run,etc/pacman.d} && \
+    mkdir -m 1777 -pv /mnt/tmp && \
+    mkdir -m 0555 -pv /mnt/{sys,proc}
+
+# Pacman config
+RUN cp -av --no-preserve=ownership /etc/pacman.d/ /mnt/etc/ && \
+    cp -av --no-preserve=ownership /etc/pacman.conf /mnt/etc/
+
+# Install system
+RUN pacman \
+    --noconfirm \
+    --noscriptlet \
+    --config /mnt/etc/pacman.conf \
+    --hookdir /mnt/etc/pacman.d/hooks \
+    --dbpath /mnt/var/lib/pacman \
+    --cachedir /mnt/var/cache/pacman/pkg \
+    -r /mnt \
+    -Sy base
+
+# |
+# | HOST: BASE
+# |
+
+FROM scratch AS host
+COPY --from=rootfs /mnt /
